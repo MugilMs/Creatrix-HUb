@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { getCreatorEarnings } from '../lib/hive';
 import type { CreatorProfile, Post, SubscriptionTier, Subscription } from '../types';
 
@@ -38,6 +38,21 @@ export const useCreatorStore = create<CreatorState>((set, get) => ({
   fetchCreatorProfile: async (userId) => {
     set({ isLoading: true });
     try {
+      if (!isSupabaseConfigured) {
+        // Mock profile for demo
+        const mockProfile: CreatorProfile = {
+          id: userId,
+          user_id: userId,
+          display_name: 'Demo Creator',
+          bio: 'Welcome to my creator page!',
+          hive_username: 'democreator',
+          subscriber_count: 0,
+          created_at: new Date().toISOString(),
+        };
+        set({ profile: mockProfile });
+        return;
+      }
+
       const { data, error } = await supabase
         .from('creator_profiles')
         .select('*')
@@ -76,6 +91,11 @@ export const useCreatorStore = create<CreatorState>((set, get) => ({
   },
 
   fetchPosts: async (creatorId) => {
+    if (!isSupabaseConfigured) {
+      set({ posts: [] });
+      return;
+    }
+
     const { data, error } = await supabase
       .from('posts')
       .select('*')
@@ -87,6 +107,17 @@ export const useCreatorStore = create<CreatorState>((set, get) => ({
   },
 
   createPost: async (post) => {
+    if (!isSupabaseConfigured) {
+      const newPost: Post = {
+        ...post,
+        id: `post-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      set({ posts: [newPost, ...get().posts] });
+      return newPost;
+    }
+
     const { data, error } = await supabase
       .from('posts')
       .insert(post)
@@ -101,6 +132,15 @@ export const useCreatorStore = create<CreatorState>((set, get) => ({
   },
 
   updatePost: async (postId, updates) => {
+    if (!isSupabaseConfigured) {
+      set({
+        posts: get().posts.map(p => 
+          p.id === postId ? { ...p, ...updates, updated_at: new Date().toISOString() } : p
+        ),
+      });
+      return;
+    }
+
     const { error } = await supabase
       .from('posts')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -115,6 +155,11 @@ export const useCreatorStore = create<CreatorState>((set, get) => ({
   },
 
   deletePost: async (postId) => {
+    if (!isSupabaseConfigured) {
+      set({ posts: get().posts.filter(p => p.id !== postId) });
+      return;
+    }
+
     const { error } = await supabase
       .from('posts')
       .delete()
@@ -171,6 +216,11 @@ export const useCreatorStore = create<CreatorState>((set, get) => ({
   },
 
   fetchSubscribers: async (creatorId) => {
+    if (!isSupabaseConfigured) {
+      set({ subscribers: [] });
+      return;
+    }
+
     const { data, error } = await supabase
       .from('subscriptions')
       .select('*')
@@ -182,7 +232,13 @@ export const useCreatorStore = create<CreatorState>((set, get) => ({
   },
 
   fetchEarnings: async (hiveUsername) => {
-    const earnings = await getCreatorEarnings(hiveUsername, 30);
-    set({ earnings });
+    try {
+      const earnings = await getCreatorEarnings(hiveUsername, 30);
+      set({ earnings });
+    } catch (error) {
+      // If Hive API fails, use mock data
+      console.warn('Failed to fetch earnings, using mock data');
+      set({ earnings: { hbd: 0, hive: 0, subscriptions: 0, tips: 0 } });
+    }
   },
 }));
