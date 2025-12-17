@@ -29,7 +29,6 @@ export const SubscribeModal = ({
   const [step, setStep] = useState<Step>('confirm');
   const [error, setError] = useState('');
   const [balance, setBalance] = useState<number | null>(null);
-  const [txId, setTxId] = useState('');
 
   const keychainAvailable = isKeychainAvailable();
 

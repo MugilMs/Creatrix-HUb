@@ -199,7 +199,7 @@ export const EarningsChart = ({ hiveUsername }: EarningsChartProps) => {
             </div>
           ) : (
             <div className="h-40 flex items-end space-x-1">
-              {earnings.slice(-30).map((day, index) => {
+              {earnings.slice(-30).map((day) => {
                 const total = day.hbd + day.hive;
                 const height = (total / maxEarning) * 100;
                 return (
