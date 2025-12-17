@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { requestKeychainHandshake, isKeychainAvailable } from '../lib/hive';
 import type { User } from '../types';
 
@@ -59,12 +59,17 @@ export const useAuthStore = create<AuthState>()(
 
           const hiveUserId = generateHiveUserId(hiveUsername);
 
-          // Check if user exists with this Hive username
-          const { data: existingUser } = await supabase
-            .from('users')
-            .select('*')
-            .eq('hive_username', hiveUsername)
-            .single();
+          let existingUser = null;
+
+          // Only query Supabase if configured
+          if (isSupabaseConfigured) {
+            const { data } = await supabase
+              .from('users')
+              .select('*')
+              .eq('hive_username', hiveUsername)
+              .single();
+            existingUser = data;
+          }
 
           if (existingUser) {
             // User exists, restore their session locally
@@ -75,23 +80,29 @@ export const useAuthStore = create<AuthState>()(
               isHiveConnected: true,
             });
           } else {
-            // Create new user profile (no Supabase auth, just data)
+            // Create new user profile
             const newUser = {
               id: hiveUserId,
               email: `${hiveUsername}@hive.local`,
               username: hiveUsername,
               hive_username: hiveUsername,
               role: 'user' as const,
+              created_at: new Date().toISOString(),
             };
 
-            const { error: profileError } = await supabase
-              .from('users')
-              .insert(newUser);
+            // Only insert to Supabase if configured
+            if (isSupabaseConfigured) {
+              const { error: profileError } = await supabase
+                .from('users')
+                .insert(newUser);
 
-            if (profileError) throw profileError;
+              if (profileError) {
+                console.warn('Failed to save user to Supabase:', profileError);
+              }
+            }
 
             set({
-              user: { ...newUser, created_at: new Date().toISOString() },
+              user: newUser,
               isLoading: false,
               hiveUsername,
               isHiveConnected: true,
@@ -123,11 +134,13 @@ export const useAuthStore = create<AuthState>()(
 
         const { user } = get();
         if (user) {
-          // Update user profile with Hive username
-          await supabase
-            .from('users')
-            .update({ hive_username: hiveUsername })
-            .eq('id', user.id);
+          // Update user profile with Hive username (only if Supabase configured)
+          if (isSupabaseConfigured) {
+            await supabase
+              .from('users')
+              .update({ hive_username: hiveUsername })
+              .eq('id', user.id);
+          }
 
           set({ 
             isHiveConnected: true, 
@@ -140,10 +153,12 @@ export const useAuthStore = create<AuthState>()(
       disconnectHive: () => {
         const { user } = get();
         if (user) {
-          supabase
-            .from('users')
-            .update({ hive_username: null })
-            .eq('id', user.id);
+          if (isSupabaseConfigured) {
+            supabase
+              .from('users')
+              .update({ hive_username: null })
+              .eq('id', user.id);
+          }
 
           set({ 
             isHiveConnected: false, 
@@ -158,22 +173,24 @@ export const useAuthStore = create<AuthState>()(
         if (!user) throw new Error('Not logged in');
         if (!hiveUsername) throw new Error('Connect Hive wallet first');
 
-        // Update user role
-        await supabase
-          .from('users')
-          .update({ role: 'creator' })
-          .eq('id', user.id);
+        if (isSupabaseConfigured) {
+          // Update user role
+          await supabase
+            .from('users')
+            .update({ role: 'creator' })
+            .eq('id', user.id);
 
-        // Create creator profile
-        await supabase
-          .from('creator_profiles')
-          .insert({
-            user_id: user.id,
-            display_name: user.username,
-            bio: '',
-            hive_username: hiveUsername,
-            subscriber_count: 0,
-          });
+          // Create creator profile
+          await supabase
+            .from('creator_profiles')
+            .insert({
+              user_id: user.id,
+              display_name: user.username,
+              bio: '',
+              hive_username: hiveUsername,
+              subscriber_count: 0,
+            });
+        }
 
         set({ user: { ...user, role: 'creator' } });
       },
@@ -182,10 +199,12 @@ export const useAuthStore = create<AuthState>()(
         const { user } = get();
         if (!user) throw new Error('Not logged in');
 
-        await supabase
-          .from('users')
-          .update(updates)
-          .eq('id', user.id);
+        if (isSupabaseConfigured) {
+          await supabase
+            .from('users')
+            .update(updates)
+            .eq('id', user.id);
+        }
 
         set({ user: { ...user, ...updates } });
       },
@@ -194,29 +213,40 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           // For Hive-only auth, check if we have a stored hiveUsername
-          const { hiveUsername } = get();
+          const { hiveUsername, user } = get();
           
           if (hiveUsername) {
-            // Restore session from stored Hive username
-            const { data: profile } = await supabase
-              .from('users')
-              .select('*')
-              .eq('hive_username', hiveUsername)
-              .single();
+            if (isSupabaseConfigured) {
+              // Restore session from stored Hive username
+              const { data: profile } = await supabase
+                .from('users')
+                .select('*')
+                .eq('hive_username', hiveUsername)
+                .single();
 
-            if (profile) {
-              set({ 
-                user: profile as User,
-                hiveUsername: profile.hive_username,
-                isHiveConnected: true,
-              });
+              if (profile) {
+                set({ 
+                  user: profile as User,
+                  hiveUsername: profile.hive_username,
+                  isHiveConnected: true,
+                });
+              } else {
+                // User not found in DB, clear local session
+                set({
+                  user: null,
+                  hiveUsername: null,
+                  isHiveConnected: false,
+                });
+              }
             } else {
-              // User not found in DB, clear local session
-              set({
-                user: null,
-                hiveUsername: null,
-                isHiveConnected: false,
-              });
+              // Mock mode: keep existing user from localStorage
+              if (user) {
+                set({
+                  user,
+                  hiveUsername,
+                  isHiveConnected: true,
+                });
+              }
             }
           }
         } finally {
