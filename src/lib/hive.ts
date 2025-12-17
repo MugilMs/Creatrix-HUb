@@ -6,7 +6,6 @@ import {
   verifyTransactionData,
   subscriptionRateLimiter,
   tipRateLimiter,
-  getSafeErrorMessage,
   logSecurityEvent,
 } from './security';
 

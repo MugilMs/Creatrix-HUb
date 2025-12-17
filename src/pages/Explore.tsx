@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Search, Filter, TrendingUp, Star, Clock } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Input } from '../components/ui';
 import { MockCreatorCard } from '../components/creator/MockCreatorCard';
 import { mockCreators, categories } from '../data/mockCreators';
 import BlurText from '../components/ui/BlurText';

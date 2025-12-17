@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Users, Wallet, Shield, Zap, Star, TrendingUp, Heart } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '../components/ui';
-import { Logo } from '../components/ui/Logo';
 import { useAuthStore } from '../store/authStore';
 import LiquidEther from '../components/ui/LiquidEther';
 import BlurText from '../components/ui/BlurText';
