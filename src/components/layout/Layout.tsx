@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from './Navbar';
+import { Footer } from './Footer';
 import CardNav from '../ui/CardNav';
 import { useAuthStore } from '../../store/authStore';
 
@@ -48,7 +49,7 @@ export const Layout = () => {
     : { label: 'Get Started', href: '/login' };
 
   return (
-    <div className={`min-h-screen ${isHomePage ? 'bg-transparent' : 'bg-gray-50'}`}>
+    <div className={`min-h-screen flex flex-col ${isHomePage ? 'bg-transparent' : 'bg-gray-50'}`}>
       {isHomePage ? (
         <CardNav
           items={navItems}
@@ -62,9 +63,10 @@ export const Layout = () => {
       ) : (
         <Navbar transparent={false} />
       )}
-      <main>
+      <main className="flex-grow">
         <Outlet />
       </main>
+      <Footer />
     </div>
   );
 };

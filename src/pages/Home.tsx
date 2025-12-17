@@ -315,45 +315,6 @@ export const Home = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="mb-4">
-                <Logo size="sm" showText={true} className="[&_span]:!text-white [&_span:last-child]:!text-gray-400" />
-              </div>
-              <p className="text-sm">Empowering creators with blockchain-powered subscriptions.</p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Platform</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/explore" className="hover:text-white transition-colors">Explore</Link></li>
-                <li><Link to="/categories" className="hover:text-white transition-colors">Categories</Link></li>
-                <li><Link to="/trending" className="hover:text-white transition-colors">Trending</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Resources</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/help" className="hover:text-white transition-colors">Help Center</Link></li>
-                <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
-                <li><Link to="/creators" className="hover:text-white transition-colors">For Creators</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold text-white mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-sm">
-            <p>© 2025 CreatorHub. Built on Hive Blockchain.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
